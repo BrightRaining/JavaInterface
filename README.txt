@@ -1,3 +1,5 @@
+JavaInterface  接口自动化项目
+为自行封装使用，如有不妥之处请留言，以下列举推广后比较好的地方  
 1.service 存放请求接口方法例如：POST和GET
 2.application.yml 主配置文件负责开启/关闭子配置文件
     application-devAccount.yml 存放账号相关的数据
