@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pumpink.demo.mapper.ChcekResultMapper">
+
+    <resultMap id="result" autoMapping="true" type="com.pumpink.demo.bean.pojo.CheckResponseResult" >
+        <id property="millis" column="millis" jdbcType="VARCHAR" javaType="String"/>
+        <result property="methodName" column="methodName" jdbcType="VARCHAR"  javaType="String"/>
+        <result property="msg" column="msg" jdbcType="VARCHAR" javaType="String"/>
+        <result property="result" column="result" jdbcType="VARCHAR" javaType="boolean"/>
+        <result property="expand" column="expand" jdbcType="VARCHAR" javaType="String"/>
+        <result property="id" column="id" jdbcType="VARCHAR" javaType="INTEGER"/>
+        <!--property是Blog实体类中属性名 ofType是集合中类型 column是集合类型的主键 select是查询方法 可以是mapper的也可以是其他mapper的要写好路径 -->
+        <!--<collection property="comment" ofType="Comment" select="" />-->
+        <collection property="resultInfList" ofType="com.pumpink.demo.bean.pojo.InfCallSequence">
+            <!--这里面的column是查询出来结果集字段名字-->
+            <id column="m" property="millis" javaType="String" />
+            <result column="interface_name" property="interfaceName" />
+            <result column="test_case_name" property="testCaseName" />
+            <result column="inf_request_header" property="infRequestHeader"/>
+            <result column="inf_request_param" property="infRequestParam" />
+            <result column="inf_start" property="infStart" />
+            <result column="inf_end" property="infEnd" />
+            <result column="inf_return_msg" property="infReturnMsg" />
+            <result column="ids" property="id"/>
+<!--            <result column="millis" property="millis" />-->
+            <result column="error_msg" property="errorMsg" />
+         </collection>
+    </resultMap>
+
+    <!-- 插入主报告   -->
+    <insert id="insertResult" parameterType="com.pumpink.demo.bean.pojo.CheckResponseResult" keyProperty="id">
+        insert into check_response_result (methodName,msg,result,expand,millis)
+        values (
+        #{methodName},#{msg},
+        <if test="result==true" >
+            1,
+        </if>
+        <if test="result==false">
+            0,
+        </if>
+<!--        #{result},-->
+        #{expand},
+        #{millis}
+        )
+    </insert>
+
+    <insert id="insertResultFu" parameterType="com.pumpink.demo.bean.pojo.InfCallSequence">
+        insert into inf_call_sequence (interface_name,inf_request_header,inf_request_param,inf_start,inf_end,inf_return_msg,millis,error_msg,test_case_name)
+        values
+        ( #{interfaceName}, #{infRequestHeader}, #{infRequestParam}, #{infStart},
+        <if test="infEnd==true" >
+            1,
+        </if>
+        <if test="infEnd==false">
+            0,
+        </if>
+        <!--            #{item.infEnd},-->
+        #{infReturnMsg},
+        #{millis},
+        #{errorMsg},
+        #{testCaseName}
+        )
+
+    </insert>
+
+
+
+    <!-- 根据时间戳来获取指定的报告 以用例标题分组 -->
+    <select id="searchResult" resultMap="result" parameterType="java.lang.String">
+        SELECT DISTINCT
+        *
+        FROM
+        check_response_result c
+        LEFT JOIN inf_call_sequence i ON c.millis = i.millis
+        WHERE
+        c.millis = #{millis}
+        AND i.interface_name NOT IN ( '/user/user_login_v2', '/user/send_phone_verify_code', '/verification_code/get_code', 'https://oauth-api.vcinema.cn/apply_api_token' )
+        AND i.interface_name NOT LIKE '%apply_%'
+        AND i.interface_name IS NOT NULL
+        GROUP BY
+        i.test_case_name
+    </select>
+
+    <!--  不分组根据时间戳查询  -->
+    <select id="searchResultNotGroup"  resultMap="result" parameterType="java.lang.String">
+        SELECT DISTINCT
+        *
+        FROM
+        check_response_result c
+        LEFT JOIN inf_call_sequence i ON c.millis = i.millis
+        WHERE
+        c.millis = #{millis}
+        AND i.interface_name NOT IN ( '/user/user_login_v2', '/user/send_phone_verify_code', '/verification_code/get_code', 'https://oauth-api.vcinema.cn/apply_api_token' )
+        AND i.interface_name NOT LIKE '%apply_%'
+        AND i.interface_name IS NOT NULL
+    </select>
+
+    <!-- 根据查询时间查询该时间(包含该时间)之前的所有报告   -->
+    <select id="searchReportByTime" resultMap="result" parameterType="java.lang.String">
+        SELECT * FROM check_response_result c LEFT JOIN inf_call_sequence i ON c.millis = i.millis WHERE c.expand &lt;= date_format(#{time},'%Y-%m-%d00:00:00') AND i.interface_name IS NOT NULL GROUP BY i.interface_name ORDER BY i.millis
+    </select>
+
+    <!--  查询主表中是否存在了一个时间戳  -->
+    <select id="getTableMiller" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT * from check_response_result WHERE check_response_result.millis = #{millis} limit 1
+    </select>
+
+    <select id="getTableLstMiller" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT * from inf_call_sequence WHERE inf_call_sequence.millis = #{millis} limit 1
+    </select>
+
+</mapper>

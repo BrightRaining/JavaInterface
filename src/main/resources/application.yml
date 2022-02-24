@@ -1,0 +1,16 @@
+mybatis:
+   mapper-locations: classpath:mapper/*.xml
+   configuration:
+      log-impl: org.apache.ibatis.logging.log4j.Log4jImpl
+spring:
+   profiles:
+      active: user,headerParmter,deviceInfor
+server:
+   port: 8089
+logging:
+   pattern:
+      level: info
+   path:
+   file: ims.log
+
+
